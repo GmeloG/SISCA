@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
@@ -16,11 +16,22 @@ def load_feature_dataset() -> pd.DataFrame:
     base_dir = Path(__file__).resolve().parents[1]  # .../SISCA
     features_path = base_dir / "data" / "TSLA_features.csv"
 
+    if not features_path.exists():
+        raise FileNotFoundError(
+            f"Feature dataset not found: {features_path}\n"
+            f"Please run: python Modelo/use_features.py"
+        )
+
     df = pd.read_csv(features_path, parse_dates=["Date"])
     df = df.sort_values("Date")
 
     df = df.dropna().reset_index(drop=True) # remove NaN (first 200 days)
 
+    if len(df) == 0:
+        raise ValueError(
+            f"Feature dataset is empty after dropping NaN values.\n"
+            f"Please check data/TSLA.csv or run: python Modelo/use_features.py"
+        )
 
     return df
 
@@ -67,7 +78,7 @@ def evaluate_regression_model(
 ) -> None:
     
     mae = mean_absolute_error(y_true, y_pred)
-    rmse = root_mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     r2 = r2_score(y_true, y_pred)
 
     print(f"\n=== Results {model_name} ===")
@@ -117,9 +128,12 @@ def main() -> None:
     evaluate_regression_model(y_test, y_pred_rf, model_name="RandomForest")
 
     # Predictions vs Real Values 
+    # align dates with test set samples
+    start_idx = len(X_train)
+    end_idx = start_idx + len(X_test)
     comparison = pd.DataFrame(
         {
-            "Date": df["Date"].iloc[len(X_train) + 1 : len(df)].reset_index(drop=True),
+            "Date": df["Date"].iloc[start_idx:end_idx].reset_index(drop=True),
             "y_true": y_test.values,
             "y_pred_lin": y_pred_lin,
             "y_pred_rf": y_pred_rf,
