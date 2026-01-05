@@ -15,12 +15,15 @@ ENV/
 dist/
 build/
 .pytest_cache/
+.venv_tf/
 
 # Temporary files
 *.tmp
 *.temp
 *~
 .DS_Store
+
+
 
 # Images
 *.png
