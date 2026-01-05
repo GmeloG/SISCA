@@ -1,19 +1,16 @@
 from __future__ import annotations
-
 from pathlib import Path
-
 import pandas as pd
-
 from features import build_feature_dataframe
 
 
 def main() -> None:
-    
-    input_path = Path(r"C:\Users\tomas\OneDrive\Documents\GitHub\SISCA/data/TSLA.csv")
-    output_path = Path(r"C:\Users\tomas\OneDrive\Documents\GitHub\SISCA/data/TSLA_features.csv")
+    base_dir = Path(__file__).resolve().parents[1]
+    input_path = base_dir / "data" / "TSLA.csv"
+    output_path = base_dir / "data" / "TSLA_features.csv"
 
 
-    #reading csv file (dataset)
+    # reading csv file (dataset)
     df_raw = pd.read_csv(input_path)
 
     print("Building features")

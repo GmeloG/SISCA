@@ -10,8 +10,8 @@ def load_features_dataframe() -> pd.DataFrame:
     """
     Lê o ficheiro TSLA_features.csv a partir da pasta data.
     """
-    base_dir = Path(r"C:\Users\tomas\OneDrive\Documents\GitHub\SISCA/data/TSLA.csv")
-    features_path = Path(r"C:\Users\tomas\OneDrive\Documents\GitHub\SISCA/data/TSLA_features.csv")
+    base_dir = Path(__file__).resolve().parents[1]
+    features_path = base_dir / "data" / "TSLA_features.csv"
 
     df = pd.read_csv(features_path, parse_dates=["Date"])
     df = df.sort_values("Date")

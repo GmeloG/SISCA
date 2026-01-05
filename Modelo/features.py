@@ -21,7 +21,7 @@ def add_basic_time_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_return_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["return_close"] = df["Close"].pct_change()
+    df["return_close"] = df["Close"].pct_change(fill_method=None)
     df["log_return_close"] = np.log(df["Close"]).diff()
     return df
 
@@ -57,7 +57,9 @@ def compute_rsi(series: pd.Series, window: int = 14) -> pd.Series:
     avg_gain = gain.rolling(window=window, min_periods=window).mean()
     avg_loss = loss.rolling(window=window, min_periods=window).mean()
 
-    rs = avg_gain / avg_loss.replace(to_replace=0, method="bfill")
+    # avoid division by zero by filling with ffill, then filling remaining with 1
+    avg_loss_filled = avg_loss.fillna(method="bfill").fillna(1.0)
+    rs = avg_gain / avg_loss_filled
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
