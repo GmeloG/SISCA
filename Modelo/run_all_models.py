@@ -217,21 +217,33 @@ def run_moving_average_baseline(
     df_sup: pd.DataFrame,
     split_idx: int,
     window: int = 50,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Baseline simples: previsão = SMA(window).
-    Assume que df_sup já não tem NaN na SMA.
-    """
-    close = df_sup["Close"]
-    # se já existir SMA correspondente, usa; se não, calcula
-    sma_col = f"SMA_{window}"
-    if sma_col in df_sup.columns:
-        sma = df_sup[sma_col]
-    else:
-        sma = close.rolling(window=window, min_periods=window).mean()
+    Baseline 'honesta' de Moving Average.
 
-    y_pred_test = sma.iloc[split_idx:].to_numpy()
-    return y_pred_test
+    - Calcula a SMA(window) apenas na parte de TREINO.
+    - Usa o último valor dessa SMA como previsão CONSTANTE
+      para TODOS os dias da janela de teste.
+
+    Devolve (y_true_test, y_pred_test) já alinhados no período de teste.
+    """
+    df_close = df_sup[["Close"]].copy()
+
+    train_set = df_close.iloc[:split_idx]
+    valid_set = df_close.iloc[split_idx:]
+
+    preds: list[float] = []
+    V = valid_set.shape[0]
+
+    for i in range(V):
+        a = train_set["Close"].iloc[len(train_set) - V + i :].sum() + sum(preds)
+        b = a / V
+        preds.append(b)
+
+    y_true_test = valid_set["Close"].to_numpy()
+    y_pred_test = np.array(preds, dtype=float)
+
+    return y_true_test, y_pred_test
 
 
 def run_linear_regression(
@@ -482,8 +494,15 @@ def main() -> None:
     # -------------------------
     # 1) Baseline Moving Average
     # -------------------------
-    y_pred_ma = run_moving_average_baseline(df_supervised, split_idx, window=50)
-    evaluate_regression_model(y_test.to_numpy(), y_pred_ma, "Moving Average (SMA_50)")
+    y_true_ma, y_pred_ma = run_moving_average_baseline(
+    df_supervised, split_idx, window=50
+)
+    evaluate_regression_model(
+        y_true_ma,
+        y_pred_ma,
+        "Moving Average (SMA_50)",
+    )
+
     plot_predictions(
         df_supervised["Date"],
         df_supervised["Close"],
@@ -491,7 +510,7 @@ def main() -> None:
         y_pred_ma,
         title="Stock Price Prediction by Moving Averages",
     )
-
+ 
     # -------------------------
     # 2) Linear Regression
     # -------------------------
